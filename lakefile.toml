@@ -1,0 +1,14 @@
+name = "GodExistence"
+version = "0.1.0"
+defaultTargets = ["godexistence"]
+
+[[lean_lib]]
+name = "GodExistence"
+
+[[lean_exe]]
+name = "godexistence"
+root = "Main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
