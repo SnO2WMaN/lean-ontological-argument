@@ -95,6 +95,27 @@ theorem necessarily_exists_godlike [K.IsS5]
     apply godlike_ess _ positive_dillema necessarily_positive_of_positive y a a_godlike_y;
 
 
+/-- God does not have any non-positive properties. -/
+lemma godlike_flawlessness (positive_dillema : ∀ Φ, ⊧ Positive (∼Φ ·) ⭤ ∼Positive Φ)
+  : ⊧ ∀' λ a => (Godlike Positive) a ➝ ∼Positive Φ ➝ ∼Φ a := by
+  intro x a a_godlike h;
+  exact a_godlike (∼Φ ·) $ positive_dillema Φ x |>.mpr h;
+
+/-- There is only one God.  -/
+theorem monotheism (positive_dillema : ∀ Φ, ⊧ Positive (∼Φ ·) ⭤ ∼Positive Φ)
+  : ⊧ (∀' λ a => ∀' λ b => (Godlike Positive a ➝ Godlike Positive b ➝ (a ≡ₗ b))) := by
+  intro x a b ha hb Φ;
+  constructor;
+  . intro h;
+    apply hb;
+    apply not_imp_not.mp $ godlike_flawlessness Positive positive_dillema x a ha;
+    assumption;
+  . intro h;
+    apply ha;
+    apply not_imp_not.mp $ godlike_flawlessness Positive positive_dillema x b hb;
+    assumption;
+
+
 theorem modal_collapse {φ : Formula K} [K.IsS5]
   (positive_dillema : ∀ Φ, ⊧ Positive (∼Φ ·) ⭤ ∼Positive Φ)
   (positive_implies : ∀ Φ Ψ, ⊧ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Φ ➝ Positive Ψ)

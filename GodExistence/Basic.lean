@@ -66,7 +66,7 @@ notation:max "⊥ₘ" => falsum
 @[simp] def verum : Formula K := λ _ => True
 notation:max "⊤ₘ" => verum
 
-@[grind] def neg (φ : Formula K) : Formula K := λ x => ¬(φ x)
+def neg (φ : Formula K) : Formula K := λ x => ¬(φ x)
 prefix:80 "∼" => neg
 
 @[simp] lemma eq_negverum_falsum : ∼(⊤ₘ : Formula K) = ⊥ₘ := by funext x; simp [verum, falsum, neg];
@@ -100,9 +100,11 @@ prefix:80 "□" => box
 @[grind] def dia (φ : Formula K) : Formula K := λ x => ∃ y, K x y ∧ φ y
 prefix:80 "◇" => dia
 
+def leibnizEq (a b : α) : Formula K := λ x => ∀ Φ : Property α K, Φ a x ↔ Φ b x
+infix:50 " ≡ₗ " => leibnizEq
 
-@[grind =] lemma eq_negbox_dianeg : ∼(□φ) = ◇(∼φ) := by funext x; grind;
-@[grind =] lemma eq_negall_exneg : ∼(∀' Φ) = ∃' (λ a => ∼(Φ a)) := by funext x; grind;
+@[grind =] lemma eq_negbox_dianeg : ∼(□φ) = ◇(∼φ) := by funext x; grind [neg];
+@[grind =] lemma eq_negall_exneg : ∼(∀' Φ) = ∃' (λ a => ∼(Φ a)) := by funext x; grind [neg];
 
 
 def Valid (φ : Formula K) : Prop := ∀ x, φ x
