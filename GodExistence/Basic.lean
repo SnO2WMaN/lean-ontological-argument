@@ -1,5 +1,6 @@
 import Mathlib.Data.Set.Basic
-import Mathlib.Tactic
+import Mathlib.Tactic.ByContra
+
 
 namespace GodExistence
 
@@ -171,88 +172,74 @@ end
 
 section Argument
 
-variable
-  {α} {K : Model}
-  {Φ Ψ : Property α K}
+variable {α} {K : Model} {Φ Ψ : Property α K}
 
-variable {Positive : Metaproperty α K}
+class Positive (𝓟 : Metaproperty α K) where
+  Ax1 : ∀ Φ, ⊧ 𝓟 (∼Φ ·) ⭤ ∼𝓟 Φ
+  Ax2 : ∀ Φ Ψ, ⊧ 𝓟 Φ ➝ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ 𝓟 Ψ
+  Ax4 : ∀ Φ, ⊧ 𝓟 Φ ➝ □𝓟 Φ
+
+variable {𝓟 : Metaproperty α K} [Positive 𝓟]
 
 /-- Emptyness is non-positive. -/
-lemma emptyness_negative
-  (Ax1 : ∀ Φ : Property α K, ⊧ Positive (λ a => ∼(Φ a)) ⭤ ∼Positive Φ)
-  (Ax2 : ∀ Φ Ψ : Property α K, ⊧ Positive Φ ➝ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Ψ)
-  : ⊧ ∼Positive (λ _ => ⊥ₘ) := by
+lemma emptyness_negative : ⊧ ∼𝓟 (λ _ => ⊥ₘ) := by
   intro x;
 
   by_contra! hC;
-  replace hC : x ∈ Positive (λ _ => ⊥ₘ) := not_not.mp $ Set.mem_compl_iff _ _ |>.not.mp hC;
+  replace hC : x ∈ 𝓟 (λ _ => ⊥ₘ) := not_not.mp $ Set.mem_compl_iff _ _ |>.not.mp hC;
 
-  have : x ∈ ∼Positive (λ _ => ⊤ₘ) := Ax1 _ x |>.mp (by simpa);
-  have : x ∈ Positive (λ _ => ⊤ₘ) := Ax2 (λ _ => ⊥ₘ) _ _ ?_ ?_;
+  have : x ∈ ∼𝓟 (λ _ => ⊤ₘ) := Positive.Ax1 _ x |>.mp (by simpa);
+  have : x ∈ 𝓟 (λ _ => ⊤ₘ) := Positive.Ax2 (λ _ => ⊥ₘ) _ _ ?_ ?_;
   contradiction;
   . assumption;
   . grind;
 
 /-- Positive properties are possibly exemplified. -/
-lemma theorem1
-  (Ax1 : ∀ Φ : Property α K, ⊧ Positive (λ a => ∼(Φ a)) ⭤ ∼Positive Φ)
-  (Ax2 : ∀ Φ Ψ : Property α K, ⊧ Positive Φ ➝ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Ψ)
-  : ⊧ Positive Φ ➝ ◇∃' (λ a => Φ a) := by
+lemma possibly_exemplified_of_positive_property : ⊧ 𝓟 Φ ➝ ◇∃' Φ := by
   intro x hx;
-  have : (∼□∀'(λ a => Φ a ➝ ⊥ₘ)) x := (not_imp_not.mpr $ Ax2 Φ (λ _ => ⊥ₘ) x hx) $ by apply emptyness_negative Ax1 Ax2;
+  have : (∼□∀'(λ a => Φ a ➝ ⊥ₘ)) x := (not_imp_not.mpr $ Positive.Ax2 Φ (λ _ => ⊥ₘ) x hx) $ by apply emptyness_negative;
   grind;
 
-def Godlike (Positive : Metaproperty α K) : Property α K := λ a => ∀' (λ Φ => Positive Φ ➝ Φ a)
+/-- `a` is Godlike if it possesses all positive properties. -/
+def Godlike (𝓟 : Metaproperty α K) : Property α K := λ a => ∀' (λ Φ => 𝓟 Φ ➝ Φ a)
 
 /-- Possibly, God exists. -/
-lemma possibly_exists_godlike
-  (Ax1 : ∀ Φ : Property α K, ⊧ Positive (λ a => ∼(Φ a)) ⭤ ∼Positive Φ)
-  (Ax2 : ∀ Φ Ψ : Property α K, ⊧ Positive Φ ➝ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Ψ)
-  (Ax3 : ⊧ Positive (Godlike (Positive)))
-  : ⊧ ◇(∃' (λ (a : α) => Godlike (Positive := Positive) a)) := by
+lemma possibly_exists_godlike (Ax3 : ⊧ 𝓟 (Godlike 𝓟)) : ⊧ ◇∃' (Godlike 𝓟) := by
   intro x;
-  apply theorem1 Ax1 Ax2;
+  apply possibly_exemplified_of_positive_property (𝓟 := 𝓟);
   apply Ax3;
 
+/-- An _essence_ of an individual is a property possessed by it and necessarily implying any of its properties. -/
 def Essence (Φ : Property α K) : Property α K := λ a => Φ a ⋏ ∀' (λ Ψ : Property α K => Ψ a ➝ □(∀' (λ b => Φ b ➝ Ψ b)))
 
-/-- Being Godlike is an essence of any Godlike being -/
-lemma godlike_ess
-  (Ax1 : ∀ Φ : Property α K, ⊧ Positive (λ a => ∼(Φ a)) ⭤ ∼Positive Φ)
-  (Ax4 : ∀ Φ : Property α K, ⊧ Positive Φ ➝ □Positive Φ)
-  : ⊧ ∀' (λ a => Godlike (Positive := Positive) a ➝ Essence (Godlike (Positive := Positive)) a) := by
+/-- Being Godlike is an essence of any Godlike being. -/
+lemma godlike_ess : ⊧ ∀' (λ a => Godlike 𝓟 a ➝ Essence (Godlike 𝓟) a) := by
   intro x a ha;
   constructor;
   . assumption;
   . intro Ψ hΨ y Rxy b b_godlike_y;
-    have Ψ_positive_x : x ∈ Positive Ψ := by
+    have Ψ_positive_x : x ∈ 𝓟 Ψ := by
       by_contra! hC;
-      have : Positive (∼Ψ ·) x := Ax1 Ψ x |>.mpr hC;
+      have : 𝓟 (∼Ψ ·) x := Positive.Ax1 Ψ x |>.mpr hC;
       have : (∼Ψ a) x := ha _ this;
       contradiction;
     apply b_godlike_y;
-    apply Ax4 _ x Ψ_positive_x y Rxy;
+    apply Positive.Ax4 _ x Ψ_positive_x y Rxy;
 
-def NecessaryExistence : Property α K := λ a => ∀' (λ Φ : Property α K => Essence Φ a ➝ □∃' (λ b => Φ b))
+def NecessaryExistence : Property α K := λ a => ∀' (λ Φ => Essence Φ a ➝ □∃' Φ)
 
-theorem necessary_exists_godlike
-  [K.IsS5]
-  (Ax1 : ∀ Φ : Property α K, ⊧ Positive (λ a => ∼(Φ a)) ⭤ ∼Positive Φ)
-  (Ax2 : ∀ Φ Ψ : Property α K, ⊧ Positive Φ ➝ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Ψ)
-  (Ax3 : ⊧ Positive (Godlike (Positive := Positive)))
-  (Ax4 : ∀ Φ : Property α K, ⊧ Positive Φ ➝ □Positive Φ)
-  (Ax5 : ⊧ Positive NecessaryExistence)
-  : ⊧ □∃' (λ a => Godlike (α := α) (K := K) (Positive := Positive) a) := by
-  suffices ⊧ ◇□∃' (λ a => Godlike (Positive := Positive) a) by apply valid_mdp valid_axiomFive this;
+/-- Necessary, God exists. -/
+theorem necessary_exists_godlike [K.IsS5] (Ax3 : ⊧ 𝓟 (Godlike 𝓟)) (Ax5 : ⊧ 𝓟 NecessaryExistence) : ⊧ □∃' (Godlike 𝓟) := by
+  suffices ⊧ ◇□∃' (Godlike 𝓟) by apply valid_mdp valid_axiomFive this;
   intro x;
-  obtain ⟨y, Rxy, ⟨a, a_godlike_y⟩⟩ : (◇∃'(λ a => Godlike _ a)) x := possibly_exists_godlike Ax1 Ax2 Ax3 x;
+  obtain ⟨y, Rxy, ⟨a, a_godlike_y⟩⟩ : (◇∃' (Godlike 𝓟)) x := possibly_exists_godlike Ax3 x;
   use y;
   constructor;
   . assumption;
-  . have H₁ := a_godlike_y NecessaryExistence;
-    have : NecessaryExistence a y := H₁ $ Ax5 y;
-    apply this;
-    apply godlike_ess Ax1 Ax4 y a a_godlike_y;
+  . have H₁ : (𝓟 NecessaryExistence ➝ NecessaryExistence a) y := a_godlike_y NecessaryExistence;
+    have H₂ : NecessaryExistence a y := H₁ $ Ax5 y;
+    apply H₂;
+    apply godlike_ess y a a_godlike_y;
 
 end Argument
 
