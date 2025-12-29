@@ -94,6 +94,35 @@ theorem necessarily_exists_godlike [K.IsS5]
     apply H₂;
     apply godlike_ess _ positive_dillema necessarily_positive_of_positive y a a_godlike_y;
 
+
+theorem modal_collapse {φ : Formula K} [K.IsS5]
+  (positive_dillema : ∀ Φ, ⊧ Positive (∼Φ ·) ⭤ ∼Positive Φ)
+  (positive_implies : ∀ Φ Ψ, ⊧ □(∀' (λ a => Φ a ➝ Ψ a)) ➝ Positive Φ ➝ Positive Ψ)
+  (necessarily_positive_of_positive : ∀ Φ, ⊧ Positive Φ ➝ □Positive Φ)
+  (positive_godlike : ⊧ Positive (Godlike Positive))
+  (positive_necessaryExistence : ⊧ Positive NecessaryExistence)
+  : ⊧ φ ⭤ □φ := by
+  intro x;
+  constructor;
+  . intro h y Rxy;
+    have : (□∀' (λ a => Godlike Positive a ➝ φ)) x := by
+      obtain ⟨a, ha⟩ := necessarily_exists_godlike _
+        positive_dillema
+        positive_implies
+        necessarily_positive_of_positive
+        positive_godlike
+        positive_necessaryExistence x x K.refl;
+      apply godlike_ess _ positive_dillema necessarily_positive_of_positive x a ha |>.2;
+      exact h;
+    obtain ⟨a, ha⟩ := necessarily_exists_godlike _
+      positive_dillema
+      positive_implies
+      necessarily_positive_of_positive
+      positive_godlike
+      positive_necessaryExistence x y Rxy;
+    apply this y Rxy a ha;
+  . apply valid_axiomT;
+
 end Argument
 
 
